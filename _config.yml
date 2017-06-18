@@ -19,3 +19,5 @@ github_username:  Rain9801
 
 # Build settings
 markdown: kramdown
+
+theme: jekyll-theme-midnight
