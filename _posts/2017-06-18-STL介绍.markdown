@@ -1,0 +1,51 @@
+---
+layout: post
+title:  "STL介绍"
+date:   2017-06-18 16:15:00 +0800
+---
+**一、STL 提供六大组件，彼此可以组合套用：**
+
+ 1. 容器（containers）：各种数据结构，如 vector, list, deque, set, map，用来存放数据；
+ 2.  算法（algorithms）：各种常用算法如 sort, search, copy, erase…，从实作的角度看，STL 算法是一种 function template。
+ 3.  迭代器（iterators）：扮演容器与算法之间的胶着剂，是所谓的“泛型指标”，从实作的角度看，迭代器是一种将 operator*, operator->, operator++, operator-- 等指标相关操作予以多载化的 class template。所有 STL 容器都附带有自己专属的迭代器 — 是的，只有容器设计者才知道如何巡访自己的元素。原生指标（native pointer）也是一种迭代器。
+ 4.  仿函式（functors）：行为类似函式，可做为算法的某种策略（policy），从实作的角度看，仿函式是一种重载了operator()的class 或class template。㆒般函式指标可视为狭义的仿函式。
+ 5.  配接器（adapters）：㆒种用来修饰容器（containers）或仿函式（functors）或迭代器（iterators）接口的东西，详见<< STL源码剖析>>第 8 章。例如 STL 提供的 queue 和stack，虽然看似容器，其实只能算是一种容器配接器，因为它们的底部完全借重 deque，所有动作都由底层的 deque 供应。改变 functor 接口者，称为 function adapter，改变 container 接口者，称为 container adapter，改变iterator 界面者，称为 iterator adapter。配接器的实作技术很难一言以蔽之，必须逐一分析。
+ 6.  配置器（allocators）：负责空间配置与管理，从实作的角度看，配置器是一个实现了动态空间配置、空间管理、空间释放的 class template。
+
+**二、STL容器**
+（1）序列式容器（Sequence containers），每个元素都有固定位置－－取决于插入时机和地点，和元素值无关，vector、deque、list；
+Vectors：将元素置于一个动态数组中加以管理，可以随机存取元素（用索引直接存取），数组尾部添加或移除元素非常快速。但是在中部或头部安插元素比较费时；
+Deques：是“double-ended queue”的缩写，可以随机存取元素（用索引直接存取），数组头部和尾部添加或移除元素都非常快速。但是在中部或头部安插元素比较费时；
+Lists：双向链表，不提供随机存取（按顺序走到需存取的元素，O(n)），在任何位置上执行插入或删除动作都非常迅速，内部只需调整一下指针；
+（2）关联式容器（Associated containers），元素位置取决于特定的排序准则，和插入顺序无关，set、multiset、map、multimap；
+ Sets/Multisets：内部的元素依据其值自动排序，Set内的相同数值的元素只能出现一次，Multisets内可包含多个数值相同的元素，内部由二叉树实现，便于查找；
+Maps/Multimaps：Map的元素是成对的键值/实值，内部的元素依据其值自动排序，Map内的相同数值的元素只能出现一次，Multimaps内可包含多个数值相同的元素，内部由二叉树实现，便于查找；
+
+**三、STL迭代器**
+迭代器（ iterator）是一种 smart pointer，是一种行为类似指针的对象，而指针的各种行为中最常见也最重要的便是内容提领（dereference）和成员取用（member access），因此迭代器最重要的编程工作就是对 operator* 和 operator-> 进行多载化（overloading）工程。关于这一点，C++ 标准链接库有一个 auto_ptr 可供我们参考，这是一个用来包装原生指针（native pointer）的对象，声名狼藉的内存漏洞（memory leak）问题可藉此获得解决。auto_ptr 用法如下，和原生指标一模一样：
+```
+void func()
+{
+    auto_ptr<string> ps(new string("jjhou"));
+    cout << *ps << endl;   // 输出：jjhou
+    cout << ps->size() << endl;// 输出：5
+    // 离开前不需 delete, auto_ptr 会自动释放内存
+}
+```
+函数第一行的意思是，以算式 new 动态配置一个初值为 "jjhou" 的 string 对象，并将所得结果（一个原生指针）做为 auto_ptr<string> 对象的初值。注意，auto_ptr 角括号内放的是「原生指针所指对象」的型别，而不是原生指针的型别。
+迭代器作用：
+（1）能够让迭代器与算法不干扰的相互发展，最后又能无间隙的粘合起来；
+（2）重载了＊，＋＋，＝＝，！＝，＝运算符。用以操作复杂的数据结构；
+（3）容器提供迭代器，算法使用迭代器；
+迭代器的分类：
+Input Iterator, Output Iterator, Forward Iterator, Bidirectional Iterator, Random access Iterator等；
+不同容器提供自己的迭代器，所以不同迭代器具有不同的能力；
+不同的算法需要不同的迭代器的能力；相同的算法需要根据迭代器的能力不同而做相应的优化；
+
+**四、STL算法**
+STL算法部分主要由头文件< algorithm >, < numeric >, <functional>组成；要使用STL中的算法函数必须包含头文件< algorithm >，对于数值算法须包含< numeric >，< functional >中则定义了一些模板类，用来声明函数对象；
+STL中算法大致分为四类：
+   非可变序列算法：指不直接修改其所操作的容器内容的算法。
+   可变序列算法：指可以修改它们所操作的容器内容的算法。
+   排序算法：包括对序列进行排序和合并的算法、搜索算法以及有序序列上的集合操作。
+   数值算法：对容器内容进行数值计算。
