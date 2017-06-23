@@ -1,0 +1,143 @@
+---
+layout: post
+title:  "C/C++算法笔记"
+date:   2017-06-23 16:15:00 +0800
+---
+一、题目：给定一个无序数组，求数组中最大的K个元素。
+思路：维护一个拥有K个元素的最小堆，数组中剩余元素分别和堆顶比较，当元素大于堆顶值时，交换堆顶和该元素的值，并进行堆的调整。最后，该最小堆的元素即为该数组中最大的K各元素，实现代码如下：
+```
+#include <stdio.h>
+#include <stdlib.h>
+#include <iostream>
+using namespace std;
+void heapifymin(int Array[],int i,int size)  
+ {  
+    if(i<size)  
+ 	{  
+ 	 	int left=2*i+1;  
+  		int right=2*i+2;  
+  		int smallest=i;//假设最小的节点为父结点  
+  		//比较父节点和左右子节点的值，找到最小值  
+  		if(left<size)  
+  		{  
+   			if(Array[smallest]>Array[left])  
+    		smallest=left;  
+  		}  
+  		if(right<size)  
+  		{  
+          	if(Array[smallest]>Array[right])  
+    		smallest=right;  
+  		}   
+       	if(smallest!=i)  //如果最小节点不是父节点，则交换父节点和最小节点
+    	{  
+     		int temp=Array[smallest];  
+     		Array[smallest]=Array[i];  
+     		Array[i]=temp;  
+     		heapifymin(Array,smallest,size);//递归调用，直到该堆为最小堆  
+    	}  
+ 	}  
+ }  
+//建立最小堆,从最后一个结点开始调整为最小堆  
+void min_heapify(int Array[],int size)  
+ {  
+   for(int i=size-1;i>=0;i--)  
+   	heapifymin(Array,i,size);  
+    
+ }  
+ //k为需要查找的最大元素个数，size为数组大小，kMax存储k个元素的最小堆  
+void FindKMax(int Array[],int k,int size,int kMax[])  
+{  
+for(int i=0;i<k;i++)  
+kMax[i]=Array[i];  
+//对kMax中的元素建立最小堆  
+min_heapify(kMax,k);  
+for(int j=k;j<size;j++)  
+  	{  
+     	if(Array[j]>kMax[0]) //如果大于堆顶元素，则进行交换  
+  		{  
+        	int temp=kMax[0];  
+  			kMax[0]=Array[j];  
+     		Array[j]=temp;    
+  			min_heapify(kMax,k); //每次交换都进行调整
+  		}  
+  	}  
+}  
+int main()  
+{  
+ 	int a[]={10,23,8,2,52,35,7,1,12}; //最大四个元素为23,52,35,12 
+ 	int length=sizeof(a)/sizeof(int);  
+ 	int k=4;  
+ 	int * kMax=(int *)malloc(k*sizeof(int));  
+ 	FindKMax(a,k,length,kMax);  
+ 	printf("The %d max values is:\n",k); 
+ 	for(int i=0;i<k;i++)  
+   		printf(" %d",kMax[i]);  
+ 	printf("\n"); 
+free(kMax);
+ 	return 0;  
+}  
+```
+二、题目：查找兄弟单词，，即在输入的多个单词中找到与指定单词字母组合一样的单词，例如abc和cab是兄弟单词，abc和abc不是兄弟单词。注：单词均为小写。
+输入：单词的个数，相应个数的单词，要匹配的单词，显示匹配的个数，例如：3 abc cab cba abc 1
+输出：兄弟单词的个数，显示指定个数的单词，例如：2 cab
+思路：先实现查找兄弟单词的模块，及将单词的字母组成分别减去 ’a’，得到0~26之间的数字，存到数组里面，最后比较要比较单词的相应数组，若数组相同，则是兄弟单词或相同单词。最后比较输入单词和要匹配的单词，并实现计数，输出。
+实现代码如下：
+```
+#include<iostream> 
+#include<cstdio> 
+#include<fstream> 
+#include<cstring> 
+#include<string> 
+#include<vector> 
+#include<algorithm> 
+using namespace std; 
+
+bool brother_word(string& str1, string& str2){
+    if (str1.size() != str2.size())
+        return false;
+    int word1[27] = { 0 };
+    int word2[27] = { 0 };
+    for (unsigned int i = 0; i<str1.size(); i++)
+        word1[str1[i] - 'a']++;
+    for (unsigned int i = 0; i<str2.size(); i++)
+        word2[str2[i] - 'a']++;
+    for (unsigned int i = 0; i<27; i++){
+        if (word1[i] != word2[i])
+            return false;
+    }
+    return true;
+}   
+int main() 
+{ 
+    int n,i,index; 
+    vector<string> words; 
+    vector<string> bother; 
+    string findWord; 
+    string temp;  
+    while((cin>>n)!=0) 
+    { 
+        words.clear(); 
+        bother.clear(); 
+        for(i=0; i<n; i++) 
+        { 
+            cin>>temp; 
+            words.push_back(temp); 
+        } 
+        cin>>findWord; 
+        cin>>index; 
+   
+        for(i=0; i<n; i++) 
+        { 
+            if(findWord!=words[i] && brother_word(findWord,words[i])) 
+            { 
+                bother.push_back(words[i]); 
+            } 
+        } 
+        sort(bother.begin(),bother.end()); 
+        cout<<bother.size()<<endl; 
+        if(index<=bother.size()) 
+            cout<<bother[index-1]<<endl; 
+    } 
+    return 0; 
+}
+```

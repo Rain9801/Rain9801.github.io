@@ -1,0 +1,54 @@
+---
+layout: post
+title:  "C/C++关键字"
+date:   2017-06-23 16:15:00 +0800
+---
+**volatile**  
+易变性。所谓的易变性，在汇编层面反映出来，就是两条语句，下一条语句不会直接使用上一条语句对应的volatile变量的寄存器内容，而是重新从内存中读取。
+ “不可优化”特性。volatile告诉编译器，不要对我这个变量进行各种激进的优化，甚至将变量直接消除，保证程序员写在代码中的指令，一定会被执行。
+ “顺序性”，能够保证Volatile变量间的顺序性，编译器不会进行乱序优化。Volatile变量与非Volatile变量的顺序，编译器不保证顺序，可能会进行乱序优化。同时，C/C++ Volatile关键词，并不能用于构建happens-before语义，因为CPU本身为了提高代码运行效率，也会对代码的执行顺序进行调整，这就是所谓的CPU Memory Model（CPU内存模型），因此在进行多线程程序设计时，要小心使用volatile，不要掉入volatile变量的使用陷阱之中。
+**explicit** 
+如果C++类的构造函数有一个参数，那么在编译的时候就会有一个缺省的转换操作：将该构造函数对应数据类型的数据转换为该类对象。通过将构造函数声明为explicit（显式）的方式可以抑制隐式转换。也就是说，explicit构造函数必须显式调用。代码如下：
+```
+class String{  
+      explicit String(int n);  
+      String(const char *p);  
+};  
+String s1 = 'a'; //错误：不能做隐式char->String转换  
+String s2(21);   //可以：调用explicit String(int n);  
+String s3 = String(21);//可以：调用explicit String(int n);再调用默认的复制构造函数  
+String s4 = "Hello"; //可以：隐式转换调用String(const char *p);再调用默认的复制构造函数  
+String s5("Hello"); //可以：正常调用String(const char *p);  
+void A(String);  
+String B()  
+{  
+    A(21); //错误：不能做隐式int->String转换  
+    A("Hello"); //可以：隐式转换，等价于A(String("Arthur"));
+    return 10; //错误：不能做隐式int->String转换
+}
+```
+**mutable**
+在类的常型（const）成员函数中，一般是不让改变类中数据成员的。如果想在常型成员函数中改变类的数据成员，在传统C++中，为达到此目，可采用一种奇怪的方式：先将this指针强制转换成一个本类的指针，然后就可以利用该指针来对类的数据成员进行任意的修改。但是，这种修改是隐藏在成员函数内部的，在类定义（头文件）中根本看不出来，而且它也破坏了设置常型成员函数的本意。
+标准C++中新增加了一个关键字mutable（易变/可变/不定/无常的），用在类的数据成员前，明确表示该成员变量可以在常型成员函数中被修改。例如：
+```
+class A {
+       int i;
+       mutable int j;
+public:
+       void f ( ) const;
+};
+void A::f ( ) const {
+       i++; // 错误，常型成员函数不允许改变数据成员的值
+       ((A*)this)->i++; // 可以，但是已经过时，不建议使用
+       j++; // 正确，mutable型成员变量可以被修改
+}
+```
+**const**
+const所修饰的对象或变量不能被改变，修饰函数时，该函数不能改变在该函数外面声明的变量，也不能调用任何非const函数。C++中，用const声明一个变量，意味着该变量就是一个带类型的常量，可以代替#define，比#define多一个类型信息，且它执行内链接，可放在头文件中声明；但在c中，其声明则必须放在源文件（即.c文件）中，在c中const声明一个变量，除了不能改变其值外，它仍是一具变量，如
+```
+const int i = 5;
+char p[i];  //c++中合法，c中不合法
+```
+const修饰变量时，如果const位于星号左侧,则const用来修饰指针所指向的变量,即指针指向的为不可变的；如果const位于星号右侧,const就是修饰指针本身,即指针本身是不可变的。
+>参考文献 http://hedengcheng.com/?p=725
+
