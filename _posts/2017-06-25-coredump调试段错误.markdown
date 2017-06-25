@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "C/C++算法笔记"
+title:  "Core dump调试段错误"
 date:   2017-06-25 16:15:00 +0800
 ---
 **一、前言**
