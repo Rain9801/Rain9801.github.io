@@ -62,15 +62,23 @@ Linux 3.0后采用了Google的论文《An Argument for Increasing TCP’s Initia
 1）等到RTO超时，重传数据包。TCP认为这种情况太糟糕，反应也很强烈。
 
 sshthresh =  cwnd /2
+
 cwnd 重置为 1
+
 进入慢启动过程
+
 2）Fast Retransmit算法，也就是在收到3个duplicate ACK时就开启重传，而不用等到RTO超时。
 
 TCP Tahoe的实现和RTO超时一样。
+
 TCP Reno的实现是：
+
 cwnd = cwnd /2
+
 sshthresh = cwnd
+
 进入快速恢复算法——Fast Recovery
+
 上面我们可以看到RTO超时后，sshthresh会变成cwnd的一半，这意味着，如果cwnd<=sshthresh时出现的丢包，那么TCP的sshthresh就会减了一半，然后等cwnd又很快地以指数级增涨爬到这个地方时，就会成慢慢的线性增涨。
 
 **快速恢复算法 – Fast Recovery**
@@ -83,7 +91,13 @@ sshthresh = cwnd
 
 然后，真正的Fast Recovery算法如下：
 
-cwnd = sshthresh  + 3 * MSS （3的意思是确认有3个数据包被收到了）重传Duplicated ACKs指定的数据包，如果再收到 duplicated Acks，那么cwnd = cwnd +1，如果收到了新的Ack，那么，cwnd = sshthresh ，然后就进入了拥塞避免的算法了。
+cwnd = sshthresh  + 3 * MSS （3的意思是确认有3个数据包被收到了）
+
+重传Duplicated ACKs指定的数据包
+
+如果再收到 duplicated Acks，那么cwnd = cwnd +1
+
+如果收到了新的Ack，那么，cwnd = sshthresh ，然后就进入了拥塞避免的算法了。
 
 如果你仔细思考一下上面的这个算法，你就会知道，上面这个算法也有问题，那就是——它依赖于3个重复的Acks。注意，3个重复的Acks并不代表只丢了一个数据包，很有可能是丢了好多包。但这个算法只会重传一个，而剩下的那些包只能等到RTO超时，于是，进入了恶梦模式——超时一个窗口就减半一下，多个超时会超成TCP的传输速度呈级数下降，而且也不会触发Fast Recovery算法了。
 
