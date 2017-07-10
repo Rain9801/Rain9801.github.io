@@ -1,0 +1,41 @@
+---
+layout: post
+title:  "C++强制类型转换"
+date:   2017-07-10 16:15:00 +0800
+---
+**C++强制类型转换**
+---------
+
+C++的四种强制类型转换，所以C++不是类型安全的。分别为：static_cast , dynamic_cast , const_cast , reinterpret_cast。
+
+static_cast:可以实现C++中内置基本数据类型之间的相互转换。
+```
+int f_to_int=static_cast<int>(3.1415);
+```
+进行类的转换时，static_cast只能在有相互联系的类型中进行相互转换。
+
+const_cast: const_cast操作不能在不同的种类间转换。相反，它仅仅把一个它作用的表达式转换成常量。它可以使一个本来不是const类型的数据转换成const类型的，或者把const属性去掉。
+
+reinterpret_cast: 有着和C风格的强制转换同样的能力。它可以转化任何内置的数据类型为其他任何的数据类型，也可以转化任何指针类型为其他的类型。它甚至可以转化内置的数据类型为指针，无须考虑类型安全或者常量的情形。不到万不得已绝对不用。
+
+dynamic_cast: 
+表达式dynamic_cast<T*>(a) 将a值转换为类型为T的对象指针。如果类型T不是a的某个基类型，该操作将返回一个空指针。
+
+ 1. 其他三种都是编译时完成的，dynamic_cast是运行时处理的，运行时要进行类型检查。
+ 2. 不能用于内置的基本数据类型的强制转换。
+ 3. dynamic_cast转换成功时返回的是指向类的指针或引用，转换失败时返回NULL。
+ 4. 使用dynamic_cast进行转换的，基类中一定要有虚函数，否则编译不通过。基类中需要检测有虚函数的原因：类中存在虚函数，就说明它有想要让基类指针或引用指向派生类对象的情况，此时转换才有意义，并且由于运行时类型检查需要运行时类型信息，而这个信息存储在类的虚函数表，只有定义了虚函数的类才有虚函数表。
+ 5. 在类的转换时，在类层次间进行上行转换时，dynamic_cast和static_cast的效果是一样的。在进行下行转换时，dynamic_cast具有类型检查的功能，比static_cast更安全。向下转换即将父类指针转化子类指针。向下转换的成功与否还与将要转换的类型有关，即要转换的指针指向的对象的实际类型与转换以后的对象类型一定要相同，否则转换失败。
+
+
+dynamic_cast 常用于从多态编程基类指针向派生类指针的向下类型转换。它有两个参数：一个是类型名；另一个是多态对象的指针或引用。其功能是在运行时将对象强制转换为目标类型并返回布尔型结果。
+```
+class Base { virtual dummy() {} };  
+class Derived : public Base {};  
+  
+Base* b1 = new Derived;  
+Base* b2 = new Base;  
+  
+Derived* d1 = dynamic_cast<Derived *>(b1); // succeeds  
+Derived* d2 = dynamic_cast<Derived *>(b2); // fails: returns 'NULL'  
+```
