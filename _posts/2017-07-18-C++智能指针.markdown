@@ -1,0 +1,167 @@
+---
+layout: post
+title:  "C++智能指针"
+date:   2017-07-18 16:15:00 +0800
+---
+
+c++里面的四个智能指针: auto_ptr, shared_ptr, weak_ptr, unique_ptr
+
+其中后三个是c++11支持，并且第一个已经被c++11弃用。
+
+为什么要使用智能指针：我们知道c++的内存管理是让很多人头疼的事，当我们写一个new语句时，一般就会立即把delete语句直接也写了，但是我们不能避免程序还未执行到delete时就跳转了或者在函数中没有执行到最后的delete语句就返回了，如果我们不在每一个可能跳转或者返回的语句前释放资源，就会造成内存泄露。使用智能指针可以很大程度上的避免这个问题，因为智能指针就是一个类，当超出了类的作用域是，类会自动调用析构函数，析构函数会自动释放资源。
+
+**auto_ptr介绍**
+```
+class Test
+{
+public:
+    Test(string s)
+    {
+        str = s;
+       cout<<"Test creat\n";
+    }
+    ~Test()
+    {
+        cout<<"Test delete:"<<str<<endl;
+    }
+    string& getStr()
+    {
+        return str;
+    }
+    void setStr(string s)
+    {
+        str = s;
+    }
+    void print()
+    {
+        cout<<str<<endl;
+    }
+private:
+    string str;
+};
+int main()
+{
+    auto_ptr<Test> ptest(new Test("123"));
+    ptest->setStr("hello ");
+    ptest->print();
+    ptest.get()->print();
+    ptest->getStr() += "world !";
+    (*ptest).print();
+    ptest.reset(new Test("123"));
+    ptest->print();
+    return 0;
+}
+```
+智能指针可以像类的原始指针一样访问类的public成员，成员函数get()返回一个原始的指针，成员函数reset()重新绑定指向的对象，而原来的对象则会被释放。注意我们访问auto_ptr的成员函数时用的是“.”，访问指向对象的成员时用的是“->”。判断一个智能指针是否为空不能使用if(ptest == NULL)，应该使用if(ptest.get() == NULL)。
+
+**auto_ptr被废除的原因**：
+
+（1）当把一个auto_ptr赋给另外一个auto_ptr时，它的所有权(ownship)也转移了。当我在函数间传递auto_ptr时，这就是一个问题。
+
+（2）auto_ptr不能指向一组对象，就是说它不能和操作符new[]一起使用。（3）auto_ptr不能和标准容器（vector,list,map....)一起使用。
+
+**unique_ptr介绍**
+
+unique_ptr也是对auto_ptr的替换。unique_ptr 是一个独享所有权的智能指针，它提供了严格意义上的所有权，包括：
+
+ 1. 拥有它指向的对象
+ 2. 无法进行复制构造，无法进行复制赋值操作。即无法使两个unique_ptr指向同一个对象。但是可以进行移动构造和移动赋值操作。
+ 3. 保存指向某个对象的指针，当它本身被删除释放的时候，会使用给定的删除器释放它指向的对象
+unique_ptr 可以实现如下功能：
+
+1、为动态申请的内存提供异常安全
+
+2、讲动态申请的内存所有权传递给某函数
+
+3、从某个函数返回动态申请内存的所有权
+
+4、在容器中保存指针
+
+5、auto_ptr 应该具有的功能
+```
+unique_ptr<Test> fun()
+{
+    return unique_ptr<Test>(new Test("789"));
+}
+int main()
+{
+    unique_ptr<Test> ptest(new Test("123"));
+    unique_ptr<Test> ptest2(new Test("456"));
+    ptest->print();
+    ptest2 = std::move(ptest);//不能直接ptest2 = ptest
+    if(ptest == NULL)cout<<"ptest = NULL\n";
+    Test* p = ptest2.release();
+    p->print();
+    ptest.reset(p);
+    ptest->print();
+    ptest2 = fun(); //这里可以用=，因为使用了移动构造函数
+    ptest2->print();
+    return 0;
+}
+```
+unique_ptr 和 auto_ptr用法很相似，不过不能使用两个智能指针赋值操作，应该使用std::move; 而且它可以直接用if(ptest == NULL)来判断是否空指针；release、get、reset等用法也和auto_ptr一致，使用函数的返回值赋值时，可以直接使用=, 这里使用c++11 的移动语义特性。另外注意的是当把它当做参数传递给函数时（使用值传递，应用传递时不用这样），传实参时也要使用std::move,比如foo(std::move(ptest))。它还增加了一个成员函数swap用于交换两个智能指针的值
+
+**share_ptr介绍**
+
+share_ptr使用计数机制来表明资源被几个指针共享。可以通过成员函数use_count()来查看资源的所有者个数。出了可以通过new来构造，还可以通过传入auto_ptr, unique_ptr,weak_ptr来构造。当我们调用release()时，当前指针会释放资源所有权，计数减1，当计数等于0时，资源会被释放。
+```
+int main()
+{
+    shared_ptr<Test> ptest(new Test("123"));
+    shared_ptr<Test> ptest2(new Test("456"));
+    cout<<ptest2->getStr()<<endl;
+    cout<<ptest2.use_count()<<endl;
+    ptest = ptest2;//"456"引用次数加1，“123”销毁
+    ptest->print();
+    cout<<ptest2.use_count()<<endl;//2
+    cout<<ptest.use_count()<<endl;//2
+    ptest.reset();
+    ptest2.reset();//此时“456”销毁
+    cout<<"done !\n";
+    return 0;
+}
+```
+**weak_ptr介绍**
+
+weak_ptr是用来解决shared_ptr相互引用时的死锁问题,如果说两个shared_ptr相互引用,那么这两个指针的引用计数永远不可能下降为0,资源永远不会释放。它是对对象的一种弱引用，不会增加对象的引用计数，和shared_ptr之间可以相互转化，shared_ptr可以直接赋值给它，它可以通过调用lock函数来获得shared_ptr。
+```
+class B;
+class A
+{
+public:
+    shared_ptr<B> pb_;
+    ~A()
+    {
+        cout<<"A delete\n";
+    }
+};
+class B
+{
+public:
+    shared_ptr<A> pa_;
+    ~B()
+    {
+        cout<<"B delete\n";
+    }
+};
+ 
+void fun()
+{
+    shared_ptr<B> pb(new B());
+    shared_ptr<A> pa(new A());
+    pb->pa_ = pa;
+    pa->pb_ = pb;
+    cout<<pb.use_count()<<endl;
+    cout<<pa.use_count()<<endl;
+}
+ 
+int main()
+{
+    fun();
+    return 0;
+}
+```
+为了避免循环引用导致函数结束时资源得不到释放，需要把其中一个改为weak_ptr，我们把类A里面的shared_ptr<B> pb_; 改为weak_ptr<B> pb_。不能通过weak_ptr直接访问对象的方法，比如B对象中有一个方法print(),我们不能这样访问：pa->pb_->print();因为pb_是一个weak_ptr，应该先把它转化为shared_ptr,如：shared_ptr<B> p = pa->pb_.lock();    p->print()。
+
+### [参考文献1](http://www.cnblogs.com/TenosDoIt/p/3456704.htmlh)
+### [参考文献2](http://www.jianshu.com/p/e4919f1c3a28)
