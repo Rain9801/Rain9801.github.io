@@ -17,12 +17,12 @@ STL空间配置器总是隐藏在一切组件的背后（具体地说是指容�
 ```
 # ifdef __USE_MALLOC
 ...
-typedef __malloc_alloc_template<0> malloc_alloc malloc_alloc malloc_alloc malloc_alloc;
-typedef malloc_alloc alloc alloc alloc alloc; // 令 alloc 为第一级配置器
+typedef __malloc_alloc_template<0> malloc_alloc;
+typedef malloc_alloc alloc; // 令 alloc 为第一级配置器
 #else
 ...
 // 令 alloc 为第二级配置器
-typedef __default_alloc_template<__NODE_ALLOCATOR_THREADS, 0> alloc alloc alloc alloc;
+typedef __default_alloc_template<__NODE_ALLOCATOR_THREADS, 0>alloc;
 #endif /* ! __USE_MALLOC */
 ```
 alloc 并不接受任何 template 型别参数。
@@ -36,7 +36,7 @@ alloc 并不接受任何 template 型别参数。
 SGI 第二级配置器的作法是，如果区块够大，超过 128 bytes，就移交第一级配置器处理。当区块小于 128 bytes，则以内存池（memory pool）管理，此法又称为次层配置（sub-allocation）：每次配置一大块内存，并维护对应之自由链表（free-list）。下次若再有相同大小的内存需求，就直接从free-lists中拨出。如果客端释还小额区块，就由配置器回收到free-lists中— 是的，别忘了，配置器除了负责配置，也负责回收。为了方便管理，SGI 第二级配置器会主动将任何小额区块的内存需求量上调至8的倍数 （例如客端 要 求 30 bytes ， 就自动 调整 为 32bytes），并维护 16 个free-lists，各自管理大小分别为 8, 16, 24, 32, 40, 48, 56, 64, 72,80, 88, 96, 104, 112, 120, 128 bytes 的小额区块。free-lists的节点结构如下：
 
 ```
-union obj obj obj obj {
+union obj{
 union obj * free_list_link;
 char client_data[1]; /* The client sees this. */
 };
