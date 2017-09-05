@@ -1,0 +1,115 @@
+---
+layout: post
+title:  "银行家算法避免死锁"
+date:   2017-09-05 16:15:00 +0800
+---
+**操作系统 银行家算法避免死锁**
+--------------
+
+1．银行家算法中的数据结构
+
+　　(1) 可利用资源向量Available。这是一个含有m个元素的数组，其中的每一个元素代表一类可利用的资源数目，其初始值是系统中所配置的该类全部可用资源的数目，其数值随该类资源的分配和回收而动态地改变。如果Available[j]=K，则表示系统中现有Rj类资源K个。
+　　
+　　(2) 最大需求矩阵Max。这是一个n×m的矩阵，它定义了系统中n个进程中的每一个进程对m类资源的最大需求。如果Max[i,j]=K，则表示进程i需要Rj类资源的最大数目为K。
+　　
+　 (3) 分配矩阵Allocation。这也是一个n×m的矩阵，它定义了系统中每一类资源当前已分配给每一进程的资源数。如果Allocation[i,j]=K，则表示进程i当前已分得R j类资源的数目为K。
+　 
+　　(4) 需求矩阵Need。这也是一个n×m的矩阵，用以表示每一个进程尚需的各类资源数。如果Need[i,j]=K，则表示进程i还需要R j类资源K个，方能完成其任务。
+
+上述三个矩阵间存在下述关系：
+
+Need[i, j]=Max[i, j]-Allocation[i, j]
+
+我们定义下面的数据结构
+
+int n,m; //系统中进程总数n和资源种类总数m
+
+int Available[1..m]; //资源当前可用总量
+
+int Allocation[1..n,1..m]; //当前给分配给每个进程的各种资源数量
+
+int Need[1..n,1..m];//当前每个进程还需分配的各种资源数量
+
+int Work[1..m]; //当前可分配的资源
+
+bool Finish[1..n]; //进程是否结束
+
+安全判定算法
+
+1.初始化
+
+Work = Available（动态记录当前剩余资源）
+
+Finish[i] = false（设定所有进程均未完成）
+
+2.查找可执行进程Pi（未完成但目前剩余资源可满足其需要，这样的进程是能够完成的）
+
+Finish[i] = false 
+
+Need[i] <= Work 
+
+如果没有这样的进程Pi，则跳转到第4步
+
+3.（若有则）Pi一定能完成，并归还其占用的资源，即：
+
+Finish[i] = true  
+
+Work = Work +Allocation[i]
+
+GOTO 第2步，继续查找
+
+4.如果所有进程Pi都是能完成的，即Finish[i]=ture
+
+则系统处于安全状态，否则系统处于不安全状态
+
+伪代码:
+```
+Boolean Found;
+Work = Available; Finish[1..n] = false; 
+while(true){
+	//不断的找可执行进程
+   Found = false;
+   for(i=1; i<=n; i++){
+	 if(Finish[i]==false && Need[i]<=Work){
+		Work = Work + Allocation[i];//把放出去的贷款也当做自己的资产
+		Finish[i] = true; 
+		Found = true;
+	  }
+	}
+   if(Found==false)break;
+ }
+for(i=1;i<=n;i++) 
+  if(Finish[i]==false)return “deadlock”; //如果有进程是完不成的，那么就是有死锁
+```
+
+资源请求算法
+
+之前说完了怎么判定当前情况是否安全，下面就是说当有进程新申请资源的时候如何处理。
+
+我们将第i个进程请求的资源数记为Requests[i]
+
+算法流程：
+
+1.如果Requests[i]<=Need[i]，则转到第二步。否则，返回异常。这一步是控制进程申请的资源不得大于需要的资源
+
+2.如果Requests[i]<=Available，则转到第三步，否则Pi等待资源。
+
+3.如果满足前两步，那么做如下操作：
+```
+Available = Available -Requests[i]
+Allocation = Allocation[i]+Requests[i]
+Need[i]=Need[i]-Requests[i]
+```
+调用安全判定算法，检查是否安全
+
+```
+if(安全)
+{
+	申请成功，资源分配
+}
+else
+{
+	申请失败，资源撤回。第三步前几个操作进行逆操作
+}
+```
+
