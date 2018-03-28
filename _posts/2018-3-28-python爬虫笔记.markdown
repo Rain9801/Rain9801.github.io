@@ -1,0 +1,93 @@
+---
+layout: post
+title:  "python爬虫笔记"
+date:   2018-03-27 16:15:00 +0800
+---
+
+Python爬虫学习
+
+Windows下配置开发环境：
+
+1.安装pip
+
+很多Python的工具包的安装，都可以使用pip install **完成， pip 和easy_install、distribute 一样，是安装Python工具包的便捷管理工具，实际python自带的安装目录下面就有pip，我们只需要将安装目录下面的Scripts文件添加到环境变量中，重启电脑，执行easy_install pip即可。另，查看python安装路径的方法是：在python解释器模式下使用如下指令：
+'''
+>>> import sys
+>>> path = sys.executable
+>>> print(path)
+'''
+
+2.安装BeautifulSoup和requests
+
+使用pip安装就比较方便了，直接执行以下两条指令就好了：
+
+'''
+pip install BeautifulSoup
+pip install requests
+'''
+
+第一步：使用Soup=BeatifulSoup(html,’lxml’)
+
+'''
+CSS Selector:
+CSS > div.main-content >ul >li:nth-child(1) >img
+XPath:
+/html/body/div[2]/ul/li[1]/img
+'''
+
+第二步：描述要爬取的东西在哪儿  =Soup.select()
+
+'''
+Imgs=soup.select(‘img[width=”160”]’)
+Cates=soup.select(div.p13n_reasoning_v2‘)
+Headers={
+	‘User-Agent’:’ ’,
+	‘Cookie’:’ ’
+}
+'''
+
+第三步：从标签中获得你要的信息 <p>Something</p>
+
+如何获取动态网页中的动态数据
+
+'''
+#!/usr/bin/env python
+# -*- coding UTF-8 -*-
+#author:yry
+#date:2018-1-22
+from bs4 import BeautifulSoup
+import requests
+import time
+url='http://xa.58.com/pingbandiannao/32855704644283x.shtml'
+wb_data=requests.get(url)
+soup=BeautifulSoup(wb_data.text,'lxml')
+def get_links_from(who_sells=0):
+    urls=[]
+    list_view='http://xa.58.com/pbdn/{}/'.format(str(who_sells))
+    wb_data=requests.get(list_view)
+    soup=BeautifulSoup(wb_data.text,'lxml')
+    # ref=soup.select('div.business_desc')
+    # print(ref)
+    for link in soup.select('div.business_desc div.left a.title'):
+        urls.append(link.get('href').split('?')[0])
+    print(urls)
+    return urls
+    
+def get_item_info(who_sells=0):
+    urls=get_links_from(who_sells)
+    for url in urls:
+        if url=='http://jump.zhineng.58.com/jump':
+            continue
+        wb_data=requests.get(url)
+        soup=BeautifulSoup(wb_data.text,'lxml')
+        data={
+            'title':soup.title.text,
+            'price':soup.select('.price')[0].text,
+            'area':list(soup.select('.c_25d')[0].stripped_strings) if soup.find_all('span','c_25d') else None,
+            'data':soup.select('.time')[0].text,
+            'cate':'个人' if who_sells==0 else '商家',
+            # 'views':soup.select('li.count em.totalcount').text
+        }
+        print(data)
+get_item_info(1)
+'''
